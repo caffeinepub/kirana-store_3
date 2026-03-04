@@ -91,7 +91,7 @@ export function AdminProductsTab() {
           )}
         </h2>
         <div className="flex gap-2">
-          {isEmpty && !isLoading && (
+          {!isLoading && (
             <Button
               variant="outline"
               size="sm"
@@ -105,7 +105,7 @@ export function AdminProductsTab() {
               ) : (
                 <Sprout size={14} />
               )}
-              Seed Sample Products
+              Seed Products
             </Button>
           )}
           <Button

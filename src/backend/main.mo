@@ -9,9 +9,12 @@ import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import Principal "mo:core/Principal";
 import List "mo:core/List";
+import Migration "migration";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
+// Apply persistent migration to upgrade the canister safely
+(with migration = Migration.run)
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -350,56 +353,94 @@ actor {
   };
 
   //----------------------- Product Seeding -------------------------------------
+  // Helper function to check if a product with the given name already exists
+  private func productExistsByName(name : Text) : Bool {
+    let existingProducts = productsMap.values().toArray();
+    existingProducts.find(func(p) { p.name == name }) != null;
+  };
+
+  // Helper function to add a product directly (internal use only, bypasses caller check)
+  private func addProductInternal(name : Text, price : Float, unit : Text, category : ProductCategory, stockQuantity : Nat, imageEmoji : Text) {
+    // Check if product already exists (idempotency)
+    if (productExistsByName(name)) {
+      return;
+    };
+
+    let product = {
+      productId = nextProductId;
+      name;
+      price;
+      unit;
+      category;
+      stockQuantity;
+      imageEmoji;
+    };
+
+    productsMap.add(nextProductId, product);
+    nextProductId += 1;
+  };
+
   public shared ({ caller }) func seedProducts() : async () {
     if (not AccessControl.isAdmin(accessControlState, caller)) {
       Runtime.trap("Unauthorized: Only admin can seed products");
     };
 
     // Groceries
-    ignore await addProduct("Basmati Rice", 80.0, "kg", #groceries, 100, "🌾");
-    ignore await addProduct("Atta", 220.0, "5kg", #groceries, 100, "🍞");
-    ignore await addProduct("Toor Dal", 110.0, "kg", #groceries, 100, "🥣");
-    ignore await addProduct("Mustard Oil", 150.0, "1L", #groceries, 100, "🌻");
-    ignore await addProduct("Sugar", 40.0, "kg", #groceries, 100, "🍬");
-    ignore await addProduct("Salt", 20.0, "kg", #groceries, 100, "🧂");
-    ignore await addProduct("Maggi Noodles", 15.0, "pack", #groceries, 100, "🍜");
-    ignore await addProduct("Britannia Bread", 40.0, "pack", #groceries, 100, "🍞");
+    addProductInternal("Basmati Rice", 80.0, "kg", #groceries, 100, "🌾");
+    addProductInternal("Atta", 220.0, "5kg", #groceries, 100, "🍞");
+    addProductInternal("Toor Dal", 110.0, "kg", #groceries, 100, "🥣");
+    addProductInternal("Mustard Oil", 150.0, "1L", #groceries, 100, "🌻");
+    addProductInternal("Sugar", 40.0, "kg", #groceries, 100, "🍬");
+    addProductInternal("Salt", 20.0, "kg", #groceries, 100, "🧂");
+    addProductInternal("Maggi Noodles", 15.0, "pack", #groceries, 100, "🍜");
+    addProductInternal("Britannia Bread", 40.0, "pack", #groceries, 100, "🍞");
 
     // Fruits
-    ignore await addProduct("Banana", 40.0, "dozen", #fruits, 100, "🍌");
-    ignore await addProduct("Apple", 120.0, "kg", #fruits, 100, "🍎");
-    ignore await addProduct("Mango", 60.0, "kg", #fruits, 100, "🥭");
-    ignore await addProduct("Watermelon", 50.0, "piece", #fruits, 100, "🍉");
-    ignore await addProduct("Grapes", 60.0, "500g", #fruits, 100, "🍇");
+    addProductInternal("Banana", 40.0, "dozen", #fruits, 100, "🍌");
+    addProductInternal("Apple", 120.0, "kg", #fruits, 100, "🍎");
+    addProductInternal("Mango", 60.0, "kg", #fruits, 100, "🥭");
+    addProductInternal("Watermelon", 50.0, "piece", #fruits, 100, "🍉");
+    addProductInternal("Grapes", 60.0, "500g", #fruits, 100, "🍇");
 
     // Vegetables
-    ignore await addProduct("Tomato", 30.0, "kg", #vegetables, 100, "🍅");
-    ignore await addProduct("Potato", 25.0, "kg", #vegetables, 100, "🥔");
-    ignore await addProduct("Onion", 30.0, "kg", #vegetables, 100, "🧅");
-    ignore await addProduct("Spinach", 20.0, "500g", #vegetables, 100, "🥬");
-    ignore await addProduct("Carrot", 25.0, "500g", #vegetables, 100, "🥕");
-    ignore await addProduct("Capsicum", 40.0, "500g", #vegetables, 100, "🫑");
+    addProductInternal("Tomato", 30.0, "kg", #vegetables, 100, "🍅");
+    addProductInternal("Potato", 25.0, "kg", #vegetables, 100, "🥔");
+    addProductInternal("Onion", 30.0, "kg", #vegetables, 100, "🧅");
+    addProductInternal("Spinach", 20.0, "500g", #vegetables, 100, "🥬");
+    addProductInternal("Carrot", 25.0, "500g", #vegetables, 100, "🥕");
+    addProductInternal("Capsicum", 40.0, "500g", #vegetables, 100, "🫑");
 
     // Dairy
-    ignore await addProduct("Amul Milk", 55.0, "1L", #dairy, 100, "🥛");
-    ignore await addProduct("Amul Butter", 260.0, "500g", #dairy, 100, "🧈");
-    ignore await addProduct("Paneer", 80.0, "200g", #dairy, 100, "🍽️");
+    addProductInternal("Amul Milk", 55.0, "1L", #dairy, 100, "🥛");
+    addProductInternal("Amul Butter", 260.0, "500g", #dairy, 100, "🧈");
+    addProductInternal("Paneer", 80.0, "200g", #dairy, 100, "🍽️");
+    addProductInternal("Amul Curd", 45.0, "400g", #dairy, 100, "🥛");
+    addProductInternal("Cheese Slice", 120.0, "pack", #dairy, 100, "🧀");
 
     // Snacks
-    ignore await addProduct("Parle-G", 10.0, "pack", #snacks, 100, "🍪");
-    ignore await addProduct("Lays Chips", 20.0, "pack", #snacks, 100, "🍟");
-    ignore await addProduct("Good Day Biscuits", 25.0, "pack", #snacks, 100, "🍪");
+    addProductInternal("Parle-G", 10.0, "pack", #snacks, 100, "🍪");
+    addProductInternal("Lays Chips", 20.0, "pack", #snacks, 100, "🍟");
+    addProductInternal("Good Day Biscuits", 25.0, "pack", #snacks, 100, "🍪");
+    addProductInternal("Kurkure", 20.0, "pack", #snacks, 100, "🌽");
+    addProductInternal("Hide & Seek", 30.0, "pack", #snacks, 100, "🍪");
 
     // Beverages
-    ignore await addProduct("Real Juice", 95.0, "1L", #beverages, 100, "🧃");
-    ignore await addProduct("Coca-Cola", 90.0, "2L", #beverages, 100, "🥤");
+    addProductInternal("Real Juice", 95.0, "1L", #beverages, 100, "🧃");
+    addProductInternal("Coca-Cola", 90.0, "2L", #beverages, 100, "🥤");
+    addProductInternal("Frooti", 20.0, "200ml", #beverages, 100, "🥭");
+    addProductInternal("Bisleri Water", 20.0, "1L", #beverages, 100, "💧");
+    addProductInternal("Horlicks", 185.0, "500g", #beverages, 100, "☕");
 
     // Personal Care
-    ignore await addProduct("Colgate Toothpaste", 60.0, "pack", #personalCare, 100, "🦷");
-    ignore await addProduct("Lifebuoy Soap", 35.0, "bar", #personalCare, 100, "🧼");
+    addProductInternal("Colgate Toothpaste", 60.0, "pack", #personalCare, 100, "🦷");
+    addProductInternal("Lifebuoy Soap", 35.0, "bar", #personalCare, 100, "🧼");
+    addProductInternal("Dove Shampoo", 180.0, "340ml", #personalCare, 100, "🧴");
+    addProductInternal("Dettol Sanitizer", 90.0, "50ml", #personalCare, 100, "🧴");
 
     // Household
-    ignore await addProduct("Surf Excel", 120.0, "kg", #household, 100, "🧺");
-    ignore await addProduct("Harpic Toilet Cleaner", 85.0, "500ml", #household, 100, "🚽");
+    addProductInternal("Surf Excel", 120.0, "kg", #household, 100, "🧺");
+    addProductInternal("Harpic Toilet Cleaner", 85.0, "500ml", #household, 100, "🚽");
+    addProductInternal("Vim Dishwash Bar", 25.0, "bar", #household, 100, "🧽");
+    addProductInternal("Colin Glass Cleaner", 99.0, "500ml", #household, 100, "🪟");
   };
 };
