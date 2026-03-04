@@ -1,0 +1,148 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 0.75rem;
+
+    /* Kirana Store Theme - Warm Earthy Greens + Saffron */
+    --background: 0.98 0.008 95;
+    --foreground: 0.18 0.03 50;
+
+    --card: 1 0 0;
+    --card-foreground: 0.18 0.03 50;
+
+    --popover: 1 0 0;
+    --popover-foreground: 0.18 0.03 50;
+
+    /* Fresh Green Primary */
+    --primary: 0.48 0.15 145;
+    --primary-foreground: 0.99 0 0;
+
+    --secondary: 0.94 0.02 95;
+    --secondary-foreground: 0.25 0.04 50;
+
+    --muted: 0.95 0.01 95;
+    --muted-foreground: 0.52 0.02 55;
+
+    /* Saffron Accent */
+    --accent: 0.78 0.15 62;
+    --accent-foreground: 0.15 0.04 50;
+
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 0.985 0 0;
+
+    --border: 0.88 0.02 95;
+    --input: 0.88 0.02 95;
+    --ring: 0.48 0.15 145;
+
+    /* Success (delivered green) */
+    --success: 0.55 0.16 145;
+    --success-foreground: 0.99 0 0;
+
+    /* Warning (pending yellow) */
+    --warning: 0.82 0.16 80;
+    --warning-foreground: 0.15 0.04 50;
+
+    /* Info (accepted blue) */
+    --info: 0.52 0.15 245;
+    --info-foreground: 0.99 0 0;
+
+    /* Orange (out for delivery) */
+    --orange: 0.68 0.18 40;
+    --orange-foreground: 0.99 0 0;
+
+    --chart-1: 0.48 0.15 145;
+    --chart-2: 0.78 0.15 62;
+    --chart-3: 0.55 0.16 145;
+    --chart-4: 0.82 0.16 80;
+    --chart-5: 0.52 0.15 245;
+
+    --sidebar: 0.96 0.01 95;
+    --sidebar-foreground: 0.18 0.03 50;
+    --sidebar-primary: 0.48 0.15 145;
+    --sidebar-primary-foreground: 0.99 0 0;
+    --sidebar-accent: 0.94 0.02 95;
+    --sidebar-accent-foreground: 0.25 0.04 50;
+    --sidebar-border: 0.88 0.02 95;
+    --sidebar-ring: 0.48 0.15 145;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: oklch(var(--muted));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(var(--primary) / 0.4);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(var(--primary) / 0.7);
+  }
+}
+
+@layer utilities {
+  .text-success { color: oklch(var(--success)); }
+  .bg-success { background-color: oklch(var(--success)); }
+  .text-success-foreground { color: oklch(var(--success-foreground)); }
+  .bg-success\/10 { background-color: oklch(var(--success) / 0.1); }
+  .text-warning { color: oklch(var(--warning)); }
+  .bg-warning { background-color: oklch(var(--warning)); }
+  .bg-warning\/10 { background-color: oklch(var(--warning) / 0.1); }
+  .text-info { color: oklch(var(--info)); }
+  .bg-info { background-color: oklch(var(--info)); }
+  .bg-info\/10 { background-color: oklch(var(--info) / 0.1); }
+  .text-orange-status { color: oklch(var(--orange)); }
+  .bg-orange-status { background-color: oklch(var(--orange)); }
+  .bg-orange-status\/10 { background-color: oklch(var(--orange) / 0.1); }
+
+  /* Grain texture overlay */
+  .grain-overlay::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  .kirana-card {
+    @apply bg-card rounded-xl border border-border shadow-sm hover:shadow-md transition-shadow duration-200;
+  }
+
+  .category-pill {
+    @apply flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap cursor-pointer;
+  }
+  .category-pill-active {
+    @apply bg-primary text-primary-foreground shadow-md;
+  }
+  .category-pill-inactive {
+    @apply bg-card text-foreground border border-border hover:border-primary hover:text-primary;
+  }
+
+  .hero-bg {
+    background: linear-gradient(
+      135deg,
+      oklch(0.96 0.04 145) 0%,
+      oklch(0.98 0.02 95) 50%,
+      oklch(0.95 0.04 62) 100%
+    );
+  }
+}
