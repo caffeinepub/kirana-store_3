@@ -23,6 +23,7 @@ import { toast } from "sonner";
 import type { Order } from "../../backend.d";
 import {
   OrderStatus,
+  PaymentMethod,
   useGetOrdersPaginated,
   useUpdateOrderStatus,
 } from "../../hooks/useQueries";
@@ -47,6 +48,27 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string; className: string }> =
       className: "bg-success/10 text-success border-success/20",
     },
   };
+
+const PAYMENT_CONFIG: Record<
+  PaymentMethod,
+  { icon: string; label: string; className: string }
+> = {
+  [PaymentMethod.cashOnDelivery]: {
+    icon: "💵",
+    label: "COD",
+    className: "bg-muted/50 text-muted-foreground border-border",
+  },
+  [PaymentMethod.upi]: {
+    icon: "📱",
+    label: "UPI",
+    className: "bg-blue-50 text-blue-700 border-blue-200",
+  },
+  [PaymentMethod.card]: {
+    icon: "💳",
+    label: "Card",
+    className: "bg-purple-50 text-purple-700 border-purple-200",
+  },
+};
 
 const ALL_STATUSES = [
   { value: "all", label: "All Orders" },
@@ -98,6 +120,19 @@ function OrderRow({
             {order.customerName}
           </p>
           <p className="text-xs text-muted-foreground">{order.customerPhone}</p>
+          {order.paymentMethod &&
+            (() => {
+              const pm = PAYMENT_CONFIG[order.paymentMethod];
+              return pm ? (
+                <Badge
+                  variant="outline"
+                  className={`mt-1 text-xs px-1.5 py-0 h-5 ${pm.className}`}
+                  data-ocid={`admin.order.payment.${index}`}
+                >
+                  {pm.icon} {pm.label}
+                </Badge>
+              ) : null;
+            })()}
         </div>
       </TableCell>
       <TableCell className="hidden lg:table-cell">

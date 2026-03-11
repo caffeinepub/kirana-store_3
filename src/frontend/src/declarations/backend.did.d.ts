@@ -13,7 +13,9 @@ import type { Principal } from '@icp-sdk/core/principal';
 export interface Order {
   'customerName' : string,
   'status' : OrderStatus,
+  'paymentMethod' : PaymentMethod,
   'customerPhone' : string,
+  'owner' : [] | [Principal],
   'createdAt' : Time,
   'orderId' : bigint,
   'totalAmount' : number,
@@ -29,6 +31,9 @@ export interface OrderedProduct {
   'quantity' : bigint,
   'price' : number,
 }
+export type PaymentMethod = { 'upi' : null } |
+  { 'cashOnDelivery' : null } |
+  { 'card' : null };
 export interface Product {
   'stockQuantity' : bigint,
   'name' : string,
@@ -45,6 +50,7 @@ export type ProductCategory = { 'groceries' : null } |
   { 'vegetables' : null } |
   { 'personalCare' : null } |
   { 'dairy' : null } |
+  { 'medicines' : null } |
   { 'household' : null };
 export type Time = bigint;
 export interface UserProfile { 'name' : string }
@@ -73,6 +79,10 @@ export interface _SERVICE {
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
   'placeOrder' : ActorMethod<[string, string, Array<OrderedProduct>], bigint>,
+  'placeOrderWithPayment' : ActorMethod<
+    [string, string, Array<OrderedProduct>, PaymentMethod],
+    bigint
+  >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'searchProducts' : ActorMethod<[string], Array<Product>>,
   'seedProducts' : ActorMethod<[], undefined>,

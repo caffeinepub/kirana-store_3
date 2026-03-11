@@ -62,6 +62,12 @@ const CATEGORIES: {
     emoji: "🏠",
     ocid: "nav.household_tab",
   },
+  {
+    key: ProductCategory.medicines,
+    label: "Medicines",
+    emoji: "💊",
+    ocid: "nav.medicines_tab",
+  },
 ];
 
 export function CategoryNav({ selected, onSelect }: CategoryNavProps) {

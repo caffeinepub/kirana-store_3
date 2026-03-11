@@ -47,6 +47,15 @@ export const PRODUCT_IMAGE_MAP: Record<string, string> = {
   "Vim Dishwash Bar": "/assets/generated/product-dishwash-bar.dim_400x400.jpg",
   "Colin Glass Cleaner":
     "/assets/generated/product-glass-cleaner.dim_400x400.jpg",
+  "Paracetamol 500mg": "/assets/generated/product-paracetamol.dim_400x400.jpg",
+  Crocin: "/assets/generated/product-crocin.dim_400x400.jpg",
+  Disprin: "/assets/generated/product-disprin.dim_400x400.jpg",
+  "ORS Sachet": "/assets/generated/product-ors-sachet.dim_400x400.jpg",
+  "Digene Antacid": "/assets/generated/product-digene.dim_400x400.jpg",
+  "Band-Aid": "/assets/generated/product-bandaid.dim_400x400.jpg",
+  "Dettol Antiseptic":
+    "/assets/generated/product-dettol-antiseptic.dim_400x400.jpg",
+  "Vicks VapoRub": "/assets/generated/product-vicks-vaporub.dim_400x400.jpg",
 };
 
 /**

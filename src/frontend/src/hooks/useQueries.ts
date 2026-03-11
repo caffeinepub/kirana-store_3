@@ -1,7 +1,25 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { OrderStatus, ProductCategory } from "../backend.d";
+import {
+  type ProductCategory as BackendProductCategory,
+  OrderStatus,
+  PaymentMethod,
+} from "../backend.d";
 import type { Order, OrderedProduct, Product } from "../backend.d";
 import { useActor } from "./useActor";
+
+// Local enum that extends the backend ProductCategory with medicines support.
+// Values intentionally match the backend enum strings.
+export enum ProductCategory {
+  groceries = "groceries",
+  fruits = "fruits",
+  vegetables = "vegetables",
+  dairy = "dairy",
+  snacks = "snacks",
+  beverages = "beverages",
+  personalCare = "personalCare",
+  household = "household",
+  medicines = "medicines",
+}
 
 export function useGetProducts() {
   const { actor, isFetching } = useActor();
@@ -22,7 +40,9 @@ export function useGetProductsByCategory(category: ProductCategory | "all") {
     queryFn: async () => {
       if (!actor) return [];
       if (category === "all") return actor.getProducts();
-      return actor.getProductsByCategory(category);
+      return actor.getProductsByCategory(
+        category as unknown as BackendProductCategory,
+      );
     },
     enabled: !!actor && !isFetching,
   });
@@ -54,6 +74,31 @@ export function usePlaceOrder() {
     }) => {
       if (!actor) throw new Error("Actor not available");
       return actor.placeOrder(customerName, customerPhone, items);
+    },
+  });
+}
+
+export function usePlaceOrderWithPayment() {
+  const { actor } = useActor();
+  return useMutation({
+    mutationFn: async ({
+      customerName,
+      customerPhone,
+      items,
+      paymentMethod,
+    }: {
+      customerName: string;
+      customerPhone: string;
+      items: OrderedProduct[];
+      paymentMethod: PaymentMethod;
+    }) => {
+      if (!actor) throw new Error("Actor not available");
+      return actor.placeOrderWithPayment(
+        customerName,
+        customerPhone,
+        items,
+        paymentMethod,
+      );
     },
   });
 }
@@ -131,7 +176,7 @@ export function useAddProduct() {
         product.name,
         product.price,
         product.unit,
-        product.category,
+        product.category as unknown as BackendProductCategory,
         product.stockQuantity,
         product.imageEmoji,
       );
@@ -161,7 +206,7 @@ export function useUpdateProduct() {
         product.name,
         product.price,
         product.unit,
-        product.category,
+        product.category as unknown as BackendProductCategory,
         product.stockQuantity,
         product.imageEmoji,
       );
@@ -200,5 +245,5 @@ export function useSeedProducts() {
   });
 }
 
-export { ProductCategory, OrderStatus };
+export { OrderStatus, PaymentMethod };
 export type { Product, Order, OrderedProduct };

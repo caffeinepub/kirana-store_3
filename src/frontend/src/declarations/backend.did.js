@@ -16,6 +16,7 @@ export const ProductCategory = IDL.Variant({
   'vegetables' : IDL.Null,
   'personalCare' : IDL.Null,
   'dairy' : IDL.Null,
+  'medicines' : IDL.Null,
   'household' : IDL.Null,
 });
 export const UserRole = IDL.Variant({
@@ -30,6 +31,11 @@ export const OrderStatus = IDL.Variant({
   'delivered' : IDL.Null,
   'accepted' : IDL.Null,
 });
+export const PaymentMethod = IDL.Variant({
+  'upi' : IDL.Null,
+  'cashOnDelivery' : IDL.Null,
+  'card' : IDL.Null,
+});
 export const Time = IDL.Int;
 export const OrderedProduct = IDL.Record({
   'productId' : IDL.Nat,
@@ -40,7 +46,9 @@ export const OrderedProduct = IDL.Record({
 export const Order = IDL.Record({
   'customerName' : IDL.Text,
   'status' : OrderStatus,
+  'paymentMethod' : PaymentMethod,
   'customerPhone' : IDL.Text,
+  'owner' : IDL.Opt(IDL.Principal),
   'createdAt' : Time,
   'orderId' : IDL.Nat,
   'totalAmount' : IDL.Float64,
@@ -99,6 +107,11 @@ export const idlService = IDL.Service({
       [IDL.Nat],
       [],
     ),
+  'placeOrderWithPayment' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Vec(OrderedProduct), PaymentMethod],
+      [IDL.Nat],
+      [],
+    ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'searchProducts' : IDL.Func([IDL.Text], [IDL.Vec(Product)], ['query']),
   'seedProducts' : IDL.Func([], [], []),
@@ -130,6 +143,7 @@ export const idlFactory = ({ IDL }) => {
     'vegetables' : IDL.Null,
     'personalCare' : IDL.Null,
     'dairy' : IDL.Null,
+    'medicines' : IDL.Null,
     'household' : IDL.Null,
   });
   const UserRole = IDL.Variant({
@@ -144,6 +158,11 @@ export const idlFactory = ({ IDL }) => {
     'delivered' : IDL.Null,
     'accepted' : IDL.Null,
   });
+  const PaymentMethod = IDL.Variant({
+    'upi' : IDL.Null,
+    'cashOnDelivery' : IDL.Null,
+    'card' : IDL.Null,
+  });
   const Time = IDL.Int;
   const OrderedProduct = IDL.Record({
     'productId' : IDL.Nat,
@@ -154,7 +173,9 @@ export const idlFactory = ({ IDL }) => {
   const Order = IDL.Record({
     'customerName' : IDL.Text,
     'status' : OrderStatus,
+    'paymentMethod' : PaymentMethod,
     'customerPhone' : IDL.Text,
+    'owner' : IDL.Opt(IDL.Principal),
     'createdAt' : Time,
     'orderId' : IDL.Nat,
     'totalAmount' : IDL.Float64,
@@ -210,6 +231,11 @@ export const idlFactory = ({ IDL }) => {
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
     'placeOrder' : IDL.Func(
         [IDL.Text, IDL.Text, IDL.Vec(OrderedProduct)],
+        [IDL.Nat],
+        [],
+      ),
+    'placeOrderWithPayment' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Vec(OrderedProduct), PaymentMethod],
         [IDL.Nat],
         [],
       ),

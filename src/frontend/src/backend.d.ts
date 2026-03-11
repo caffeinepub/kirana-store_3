@@ -10,7 +10,9 @@ export type Option<T> = Some<T> | None;
 export interface Order {
     customerName: string;
     status: OrderStatus;
+    paymentMethod: PaymentMethod;
     customerPhone: string;
+    owner?: Principal;
     createdAt: Time;
     orderId: bigint;
     totalAmount: number;
@@ -41,6 +43,11 @@ export enum OrderStatus {
     delivered = "delivered",
     accepted = "accepted"
 }
+export enum PaymentMethod {
+    upi = "upi",
+    cashOnDelivery = "cashOnDelivery",
+    card = "card"
+}
 export enum ProductCategory {
     groceries = "groceries",
     snacks = "snacks",
@@ -49,6 +56,7 @@ export enum ProductCategory {
     vegetables = "vegetables",
     personalCare = "personalCare",
     dairy = "dairy",
+    medicines = "medicines",
     household = "household"
 }
 export enum UserRole {
@@ -74,6 +82,7 @@ export interface backendInterface {
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
     placeOrder(customerName: string, customerPhone: string, items: Array<OrderedProduct>): Promise<bigint>;
+    placeOrderWithPayment(customerName: string, customerPhone: string, items: Array<OrderedProduct>, paymentMethod: PaymentMethod): Promise<bigint>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     searchProducts(searchTerm: string): Promise<Array<Product>>;
     seedProducts(): Promise<void>;

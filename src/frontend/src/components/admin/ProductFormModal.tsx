@@ -38,6 +38,7 @@ const CATEGORIES = [
   { value: ProductCategory.beverages, label: "🥤 Beverages" },
   { value: ProductCategory.personalCare, label: "🧴 Personal Care" },
   { value: ProductCategory.household, label: "🏠 Household" },
+  { value: ProductCategory.medicines, label: "💊 Medicines" },
 ];
 
 const UNITS = [
@@ -47,6 +48,20 @@ const UNITS = [
   { value: "pack", label: "Pack" },
   { value: "dozen", label: "Dozen" },
   { value: "500g", label: "500g" },
+  { value: "strip", label: "Strip" },
+  { value: "bottle", label: "Bottle" },
+  { value: "bar", label: "Bar" },
+  { value: "100ml", label: "100ml" },
+  { value: "25g", label: "25g" },
+  { value: "1L", label: "1L" },
+  { value: "340ml", label: "340ml" },
+  { value: "50ml", label: "50ml" },
+  { value: "200ml", label: "200ml" },
+  { value: "2L", label: "2L" },
+  { value: "400g", label: "400g" },
+  { value: "200g", label: "200g" },
+  { value: "500ml", label: "500ml" },
+  { value: "5kg", label: "5kg" },
 ];
 
 interface FormData {

@@ -40,6 +40,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   beverages: "🥤 Beverages",
   personalCare: "🧴 Personal Care",
   household: "🏠 Household",
+  medicines: "💊 Medicines",
 };
 
 export function AdminProductsTab() {

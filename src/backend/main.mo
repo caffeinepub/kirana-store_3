@@ -1,6 +1,5 @@
 import Map "mo:core/Map";
 import Array "mo:core/Array";
-import Iter "mo:core/Iter";
 import Order "mo:core/Order";
 import Text "mo:core/Text";
 import Nat "mo:core/Nat";
@@ -8,13 +7,12 @@ import Float "mo:core/Float";
 import Runtime "mo:core/Runtime";
 import Time "mo:core/Time";
 import Principal "mo:core/Principal";
-import List "mo:core/List";
-import Migration "migration";
+
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
 // Apply persistent migration to upgrade the canister safely
-(with migration = Migration.run)
+
 actor {
   let accessControlState = AccessControl.initState();
   include MixinAuthorization(accessControlState);
@@ -29,6 +27,7 @@ actor {
     #beverages;
     #personalCare;
     #household;
+    #medicines;
   };
 
   module ProductCategory {
@@ -42,8 +41,15 @@ actor {
         case (#beverages) { "beverages" };
         case (#personalCare) { "personalCare" };
         case (#household) { "household" };
+        case (#medicines) { "medicines" };
       };
     };
+  };
+
+  public type PaymentMethod = {
+    #cashOnDelivery;
+    #upi;
+    #card;
   };
 
   public type OrderStatus = {
@@ -84,6 +90,8 @@ actor {
     totalAmount : Float;
     status : OrderStatus;
     createdAt : Time.Time;
+    paymentMethod : PaymentMethod;
+    owner : ?Principal;
   };
 
   public type UserProfile = {
@@ -104,7 +112,7 @@ actor {
   //---------------------- Persistent state -------------------------------------
   var nextProductId = 1;
   var nextOrderId = 1;
-
+  var seeded = false; // kept for upgrade compatibility
   let productsMap = Map.empty<Nat, Product>();
   let ordersMap = Map.empty<Nat, Order>();
   let userProfiles = Map.empty<Principal, UserProfile>();
@@ -221,6 +229,20 @@ actor {
 
   //----------------------- Order Management ------------------------------------
   public shared ({ caller }) func placeOrder(customerName : Text, customerPhone : Text, items : [OrderedProduct]) : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can place orders");
+    };
+    placeOrderWithPaymentInternal(caller, customerName, customerPhone, items, #cashOnDelivery);
+  };
+
+  public shared ({ caller }) func placeOrderWithPayment(customerName : Text, customerPhone : Text, items : [OrderedProduct], paymentMethod : PaymentMethod) : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can place orders");
+    };
+    placeOrderWithPaymentInternal(caller, customerName, customerPhone, items, paymentMethod);
+  };
+
+  func placeOrderWithPaymentInternal(owner : Principal, customerName : Text, customerPhone : Text, items : [OrderedProduct], paymentMethod : PaymentMethod) : Nat {
     // Verify stock availability before placing order
     for (item in items.values()) {
       switch (productsMap.get(item.productId)) {
@@ -244,6 +266,8 @@ actor {
       totalAmount;
       status = #pending : OrderStatus;
       createdAt = Time.now();
+      paymentMethod;
+      owner = ?owner;
     };
 
     ordersMap.add(orderId, order);
@@ -289,8 +313,16 @@ actor {
   };
 
   public query ({ caller }) func getOrdersByPhone(phone : Text) : async [Order] {
-    // Public access allowed - customers can check their orders by phone
-    let filtered = ordersMap.values().toArray().filter(func(order) { order.customerPhone == phone });
+    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
+      Runtime.trap("Unauthorized: Only users can view orders");
+    };
+
+    let filtered = ordersMap.values().toArray().filter(
+      func(order) {
+        // Users can only see their own orders, admins can see all
+        order.customerPhone == phone and (order.owner == caller or AccessControl.isAdmin(accessControlState, caller))
+      }
+    );
     filtered;
   };
 
@@ -380,11 +412,8 @@ actor {
     nextProductId += 1;
   };
 
-  public shared ({ caller }) func seedProducts() : async () {
-    if (not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Only admin can seed products");
-    };
-
+  // Internal function for initial data seeding using system postupgrade
+  private func runSeedProducts() {
     // Groceries
     addProductInternal("Basmati Rice", 80.0, "kg", #groceries, 100, "🌾");
     addProductInternal("Atta", 220.0, "5kg", #groceries, 100, "🍞");
@@ -401,6 +430,8 @@ actor {
     addProductInternal("Mango", 60.0, "kg", #fruits, 100, "🥭");
     addProductInternal("Watermelon", 50.0, "piece", #fruits, 100, "🍉");
     addProductInternal("Grapes", 60.0, "500g", #fruits, 100, "🍇");
+    addProductInternal("Papaya", 35.0, "piece", #fruits, 100, "🍈");
+    addProductInternal("Pomegranate", 80.0, "piece", #fruits, 100, "🍎");
 
     // Vegetables
     addProductInternal("Tomato", 30.0, "kg", #vegetables, 100, "🍅");
@@ -409,6 +440,8 @@ actor {
     addProductInternal("Spinach", 20.0, "500g", #vegetables, 100, "🥬");
     addProductInternal("Carrot", 25.0, "500g", #vegetables, 100, "🥕");
     addProductInternal("Capsicum", 40.0, "500g", #vegetables, 100, "🫑");
+    addProductInternal("Cauliflower", 30.0, "piece", #vegetables, 100, "🥦");
+    addProductInternal("Bitter Gourd", 35.0, "500g", #vegetables, 100, "🥒");
 
     // Dairy
     addProductInternal("Amul Milk", 55.0, "1L", #dairy, 100, "🥛");
@@ -442,5 +475,111 @@ actor {
     addProductInternal("Harpic Toilet Cleaner", 85.0, "500ml", #household, 100, "🚽");
     addProductInternal("Vim Dishwash Bar", 25.0, "bar", #household, 100, "🧽");
     addProductInternal("Colin Glass Cleaner", 99.0, "500ml", #household, 100, "🪟");
+    // More Groceries
+    addProductInternal("Chana Dal", 95.0, "kg", #groceries, 100, "🫘");
+    addProductInternal("Moong Dal", 100.0, "kg", #groceries, 100, "🟡");
+    addProductInternal("Besan", 60.0, "500g", #groceries, 100, "🌾");
+    addProductInternal("Poha", 50.0, "500g", #groceries, 100, "🌾");
+    addProductInternal("Sooji", 40.0, "500g", #groceries, 100, "🌾");
+    addProductInternal("Turmeric Powder", 30.0, "100g", #groceries, 100, "🟡");
+    addProductInternal("Red Chilli Powder", 35.0, "100g", #groceries, 100, "🌶️");
+    addProductInternal("Coriander Powder", 30.0, "100g", #groceries, 100, "🌿");
+    addProductInternal("Cumin Seeds", 40.0, "100g", #groceries, 100, "🌿");
+    addProductInternal("Black Pepper", 50.0, "50g", #groceries, 100, "⚫");
+    addProductInternal("Vermicelli", 30.0, "200g", #groceries, 100, "🍝");
+    addProductInternal("Sunflower Oil", 140.0, "1L", #groceries, 100, "🌻");
+
+    // More Fruits
+    addProductInternal("Orange", 80.0, "kg", #fruits, 100, "🍊");
+    addProductInternal("Pineapple", 60.0, "piece", #fruits, 100, "🍍");
+    addProductInternal("Guava", 40.0, "kg", #fruits, 100, "🍐");
+    addProductInternal("Litchi", 100.0, "500g", #fruits, 100, "🍒");
+    addProductInternal("Strawberry", 150.0, "250g", #fruits, 100, "🍓");
+    addProductInternal("Coconut", 40.0, "piece", #fruits, 100, "🥥");
+    addProductInternal("Lemon", 10.0, "piece", #fruits, 100, "🍋");
+
+    // More Vegetables
+    addProductInternal("Ladyfinger (Bhindi)", 40.0, "500g", #vegetables, 100, "🌿");
+    addProductInternal("Brinjal", 30.0, "500g", #vegetables, 100, "🍆");
+    addProductInternal("Peas", 50.0, "500g", #vegetables, 100, "🫛");
+    addProductInternal("Garlic", 40.0, "250g", #vegetables, 100, "🧄");
+    addProductInternal("Ginger", 30.0, "250g", #vegetables, 100, "🫚");
+    addProductInternal("Green Chilli", 20.0, "250g", #vegetables, 100, "🌶️");
+    addProductInternal("Beetroot", 35.0, "500g", #vegetables, 100, "🫀");
+    addProductInternal("Cabbage", 25.0, "piece", #vegetables, 100, "🥬");
+    addProductInternal("Radish", 20.0, "500g", #vegetables, 100, "🌿");
+    addProductInternal("Bottle Gourd", 30.0, "piece", #vegetables, 100, "🥒");
+
+    // More Dairy
+    addProductInternal("Amul Ghee", 350.0, "500g", #dairy, 100, "🧈");
+    addProductInternal("Lassi", 30.0, "200ml", #dairy, 100, "🥛");
+    addProductInternal("Cream", 55.0, "200ml", #dairy, 100, "🍦");
+    addProductInternal("Condensed Milk", 80.0, "400g", #dairy, 100, "🥛");
+
+    // More Snacks
+    addProductInternal("Haldiram Bhujia", 60.0, "200g", #snacks, 100, "🌾");
+    addProductInternal("Pringles", 120.0, "110g", #snacks, 100, "🍟");
+    addProductInternal("5 Star Chocolate", 20.0, "piece", #snacks, 100, "⭐");
+    addProductInternal("KitKat", 30.0, "piece", #snacks, 100, "🍫");
+    addProductInternal("Oreo Biscuits", 40.0, "pack", #snacks, 100, "🍪");
+    addProductInternal("Murukku", 50.0, "200g", #snacks, 100, "🌀");
+    addProductInternal("Popcorn", 30.0, "pack", #snacks, 100, "🍿");
+    addProductInternal("Cashew Nuts", 200.0, "250g", #snacks, 100, "🥜");
+    addProductInternal("Almonds", 250.0, "250g", #snacks, 100, "🥜");
+
+    // More Beverages
+    addProductInternal("Sprite", 40.0, "500ml", #beverages, 100, "🥤");
+    addProductInternal("Pepsi", 40.0, "500ml", #beverages, 100, "🥤");
+    addProductInternal("Tropicana Juice", 80.0, "1L", #beverages, 100, "🧃");
+    addProductInternal("Boost", 180.0, "500g", #beverages, 100, "☕");
+    addProductInternal("Bru Coffee", 120.0, "100g", #beverages, 100, "☕");
+    addProductInternal("Tata Tea", 110.0, "250g", #beverages, 100, "🍵");
+    addProductInternal("Red Bull", 115.0, "250ml", #beverages, 100, "🐂");
+    addProductInternal("Coconut Water", 35.0, "200ml", #beverages, 100, "🥥");
+
+    // More Personal Care
+    addProductInternal("Head & Shoulders Shampoo", 200.0, "400ml", #personalCare, 100, "🧴");
+    addProductInternal("Nivea Cream", 110.0, "100ml", #personalCare, 100, "🧴");
+    addProductInternal("Gillette Razor", 150.0, "piece", #personalCare, 100, "🪒");
+    addProductInternal("Whisper Pads", 80.0, "pack", #personalCare, 100, "🩺");
+    addProductInternal("Oral-B Toothbrush", 60.0, "piece", #personalCare, 100, "🪥");
+    addProductInternal("Vaseline", 80.0, "100ml", #personalCare, 100, "🧴");
+    addProductInternal("Parachute Coconut Oil", 110.0, "200ml", #personalCare, 100, "🥥");
+
+    // More Household
+    addProductInternal("Phenyl Floor Cleaner", 60.0, "1L", #household, 100, "🧹");
+    addProductInternal("Odonil Air Freshener", 45.0, "piece", #household, 100, "🌸");
+    addProductInternal("Lizol Disinfectant", 130.0, "1L", #household, 100, "🧽");
+    addProductInternal("Trash Bags", 55.0, "pack", #household, 100, "🗑️");
+    addProductInternal("Tissue Paper", 40.0, "pack", #household, 100, "🧻");
+    addProductInternal("Ariel Detergent", 150.0, "kg", #household, 100, "🧺");
+    addProductInternal("Matchbox", 5.0, "pack", #household, 100, "🔥");
+
+    // Medicines
+    addProductInternal("Paracetamol", 12.0, "strip", #medicines, 100, "💊");
+    addProductInternal("Crocin", 28.0, "strip", #medicines, 100, "💊");
+    addProductInternal("Disprin", 15.0, "strip", #medicines, 100, "💊");
+    addProductInternal("ORS Sachet", 10.0, "sachet", #medicines, 100, "💧");
+    addProductInternal("Digene Antacid", 45.0, "pack", #medicines, 100, "💊");
+    addProductInternal("Band-Aid", 30.0, "pack", #medicines, 100, "🩹");
+    addProductInternal("Dettol Antiseptic", 90.0, "100ml", #medicines, 100, "🧴");
+    addProductInternal("Vicks VapoRub", 55.0, "25ml", #medicines, 100, "🫁");
+    addProductInternal("Ibuprofen", 25.0, "strip", #medicines, 100, "💊");
+    addProductInternal("Antacid Syrup", 60.0, "200ml", #medicines, 100, "🍶");
+    addProductInternal("Vitamin C Tablets", 80.0, "strip", #medicines, 100, "🍊");
+
+
+
+  };
+
+  system func postupgrade() {
+    runSeedProducts();
+  };
+
+  public shared ({ caller }) func seedProducts() : async () {
+    if (not AccessControl.isAdmin(accessControlState, caller)) {
+      Runtime.trap("Unauthorized: Only admin can seed products");
+    };
+    runSeedProducts();
   };
 };
